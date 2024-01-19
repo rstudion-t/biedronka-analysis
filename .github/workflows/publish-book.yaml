@@ -6,6 +6,11 @@ name: deploy-book
 on:
   push
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   deploy-book:
     runs-on: ubuntu-latest
