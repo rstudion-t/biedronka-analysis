@@ -62,6 +62,8 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="../_static/sphinx-thebe.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/analysis';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -170,6 +172,14 @@ const thebe_selector_output = ".output, .cell_output"
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Biedronki</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Raport z analizy danych</a></li>
+
+
+
+
+
+
+
+
 
 </ul>
 
@@ -380,6 +390,18 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rozklady-danych-kategorycznych">Rozkłady danych kategorycznych</a></li>
 </ul>
 </li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#analiza-korelacji">Analiza korelacji</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#podsumowanie-statystyk-opisowych">Podsumowanie statystyk opisowych</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#analiza-oceny-doswiadczenia-zakupowego">Analiza oceny doświadczenia zakupowego</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#analiza-dochodow-brutto">Analiza dochodów brutto</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sprawdzanie-istotnosci">Sprawdzanie istotności</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-anova">Test ANOVA</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#t-test">T-test</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#analiza-liczby-odwiedzin-w-zaleznosci-od-godziny">Analiza liczby odwiedzin w zależności od godziny</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#test-chi-kwadrat">Test chi-kwadrat</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#podsumowanie">Podsumowanie</a></li>
 </ul>
 
             </nav>
@@ -406,8 +428,11 @@ document.write(`
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">stats</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 </pre></div>
 </div>
 </div>
@@ -423,7 +448,22 @@ document.write(`
 <span class="c1"># Applies both to Matplotlib and Seaborn (Seaborn internally uses matplotlib)</span>
 <span class="n">sns</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="s2">&quot;whitegrid&quot;</span><span class="p">)</span>
 
-<span class="n">PLOT_COLORS</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;#6247aa&#39;</span><span class="p">,</span> <span class="s1">&#39;#7251b5&#39;</span><span class="p">,</span> <span class="s1">&#39;#815ac0&#39;</span><span class="p">,</span> <span class="s1">&#39;#9163cb&#39;</span><span class="p">,</span> <span class="s1">&#39;#a06cd5&#39;</span><span class="p">,</span> <span class="s1">&#39;#b185db&#39;</span><span class="p">]</span>
+<span class="c1"># Make custom color palette from list of colors</span>
+<span class="n">PLOT_COLORS</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;#6247aa&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#7251b5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#815ac0&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#9163cb&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#a06cd5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;#b185db&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">custom_palette</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">color_palette</span><span class="p">(</span><span class="n">PLOT_COLORS</span><span class="p">)</span>
+
+<span class="c1"># Silence seaborn FutureWarning and UserWarning</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">FutureWarning</span><span class="p">)</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">)</span>
+
 
 <span class="k">def</span> <span class="nf">get_color</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">PLOT_COLORS</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">PLOT_COLORS</span><span class="p">)]</span>
@@ -436,6 +476,7 @@ document.write(`
 </section>
 <section class="tex2jax_ignore mathjax_ignore" id="zbior-danych">
 <h1>Zbiór danych<a class="headerlink" href="#zbior-danych" title="Permalink to this heading">#</a></h1>
+<p>Załadowanie zbioru danych do DataFrame oraz wyświetlenie pierwszych pięciu rekordów</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;../data/biedronki.csv&quot;</span><span class="p">)</span>
@@ -647,6 +688,7 @@ document.write(`
 </tr>
 </tbody>
 </table>
+<p>Niezwykle ważny do podkreślenia jest fakt, że analizowany zbiór danych <strong>nie zawiera</strong> brakujących wartości.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
@@ -682,11 +724,10 @@ memory usage: 132.9+ KB
 </div>
 </div>
 </div>
-<p>Niezwykle ważny do podkreślenia jest fakt, że analizowany zbiór danych <strong>nie zawiera</strong> brakujących wartości.</p>
 <p>Z kolumn <code class="docutils literal notranslate"><span class="pre">Date</span></code> i <code class="docutils literal notranslate"><span class="pre">Time</span></code> można utworzyć jedną, lepiej interpretowalną kolumnę <code class="docutils literal notranslate"><span class="pre">Datetime</span></code></p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Datetime&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Date&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Time&#39;</span><span class="p">])</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;Datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;Date&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Time&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
@@ -696,7 +737,15 @@ memory usage: 132.9+ KB
 <p>Statystyki opisowe danych numerycznych</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;float64&#39;</span><span class="p">,</span> <span class="s1">&#39;int64&#39;</span><span class="p">])</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Subset df to only include float64 and int64 columns</span>
+<span class="n">df_num</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;float64&quot;</span><span class="p">,</span> <span class="s2">&quot;int64&quot;</span><span class="p">])</span>
+
+<span class="n">df_num_desc</span> <span class="o">=</span> <span class="n">df_num</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+
+<span class="n">df_num_desc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;range&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_num_desc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df_num_desc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">]</span>
+<span class="n">df_num_desc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;skew&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_num</span><span class="o">.</span><span class="n">skew</span><span class="p">()</span>
+<span class="n">df_num_desc</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;kurt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_num</span><span class="o">.</span><span class="n">kurt</span><span class="p">()</span>
+<span class="n">df_num_desc</span>
 </pre></div>
 </div>
 </div>
@@ -736,10 +785,10 @@ memory usage: 132.9+ KB
       <td>1000.000000</td>
       <td>1000.000000</td>
       <td>1000.000000</td>
-      <td>1000.00000</td>
       <td>1000.000000</td>
       <td>1000.000000</td>
-      <td>1000.00000</td>
+      <td>1000.000000</td>
+      <td>1000.000000</td>
     </tr>
     <tr>
       <th>mean</th>
@@ -747,10 +796,10 @@ memory usage: 132.9+ KB
       <td>5.510000</td>
       <td>15.379369</td>
       <td>322.966749</td>
-      <td>307.58738</td>
+      <td>307.587380</td>
       <td>4.761905</td>
       <td>15.379369</td>
-      <td>6.97270</td>
+      <td>6.972700</td>
     </tr>
     <tr>
       <th>std</th>
@@ -758,10 +807,10 @@ memory usage: 132.9+ KB
       <td>2.923431</td>
       <td>11.708825</td>
       <td>245.885335</td>
-      <td>234.17651</td>
+      <td>234.176510</td>
       <td>0.000000</td>
       <td>11.708825</td>
-      <td>1.71858</td>
+      <td>1.718580</td>
     </tr>
     <tr>
       <th>min</th>
@@ -769,10 +818,10 @@ memory usage: 132.9+ KB
       <td>1.000000</td>
       <td>0.508500</td>
       <td>10.678500</td>
-      <td>10.17000</td>
+      <td>10.170000</td>
       <td>4.761905</td>
       <td>0.508500</td>
-      <td>4.00000</td>
+      <td>4.000000</td>
     </tr>
     <tr>
       <th>25%</th>
@@ -780,10 +829,10 @@ memory usage: 132.9+ KB
       <td>3.000000</td>
       <td>5.924875</td>
       <td>124.422375</td>
-      <td>118.49750</td>
+      <td>118.497500</td>
       <td>4.761905</td>
       <td>5.924875</td>
-      <td>5.50000</td>
+      <td>5.500000</td>
     </tr>
     <tr>
       <th>50%</th>
@@ -791,10 +840,10 @@ memory usage: 132.9+ KB
       <td>5.000000</td>
       <td>12.088000</td>
       <td>253.848000</td>
-      <td>241.76000</td>
+      <td>241.760000</td>
       <td>4.761905</td>
       <td>12.088000</td>
-      <td>7.00000</td>
+      <td>7.000000</td>
     </tr>
     <tr>
       <th>75%</th>
@@ -802,10 +851,10 @@ memory usage: 132.9+ KB
       <td>8.000000</td>
       <td>22.445250</td>
       <td>471.350250</td>
-      <td>448.90500</td>
+      <td>448.905000</td>
       <td>4.761905</td>
       <td>22.445250</td>
-      <td>8.50000</td>
+      <td>8.500000</td>
     </tr>
     <tr>
       <th>max</th>
@@ -813,22 +862,60 @@ memory usage: 132.9+ KB
       <td>10.000000</td>
       <td>49.650000</td>
       <td>1042.650000</td>
-      <td>993.00000</td>
+      <td>993.000000</td>
       <td>4.761905</td>
       <td>49.650000</td>
-      <td>10.00000</td>
+      <td>10.000000</td>
+    </tr>
+    <tr>
+      <th>range</th>
+      <td>89.880000</td>
+      <td>9.000000</td>
+      <td>49.141500</td>
+      <td>1031.971500</td>
+      <td>982.830000</td>
+      <td>0.000000</td>
+      <td>49.141500</td>
+      <td>6.000000</td>
+    </tr>
+    <tr>
+      <th>skew</th>
+      <td>0.007077</td>
+      <td>0.012941</td>
+      <td>0.892570</td>
+      <td>0.892570</td>
+      <td>0.892570</td>
+      <td>0.000000</td>
+      <td>0.892570</td>
+      <td>0.009010</td>
+    </tr>
+    <tr>
+      <th>kurt</th>
+      <td>-1.218591</td>
+      <td>-1.215547</td>
+      <td>-0.081885</td>
+      <td>-0.081885</td>
+      <td>-0.081885</td>
+      <td>0.000000</td>
+      <td>-0.081885</td>
+      <td>-1.151587</td>
     </tr>
   </tbody>
 </table>
 </div></div></div>
 </div>
+<p>Przyglądając się statystykom opisowym można zauważyć, że:</p>
+<ul class="simple">
+<li><p>rozkłady opisujące ceny charakteryzują się dodatnią skośnością, co oznacza, że większość cen jest niższa niż średnia i rozkład jest lewostronny,</p></li>
+<li><p>kolumna <code class="docutils literal notranslate"><span class="pre">Unit</span> <span class="pre">price</span></code> ma niezwykle zbliżone wartości średniej i mediany, co oznacza, że rozkład jest symetryczny, podobnie dla kolumny <code class="docutils literal notranslate"><span class="pre">Quantity</span></code></p></li>
+</ul>
 </section>
 <section id="dane-kategoryczne">
 <h2>Dane kategoryczne<a class="headerlink" href="#dane-kategoryczne" title="Permalink to this heading">#</a></h2>
 <p>Statystyki opisowe danych kategorycznych</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;Date&#39;</span><span class="p">,</span> <span class="s1">&#39;Time&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s2">&quot;Date&quot;</span><span class="p">,</span> <span class="s2">&quot;Time&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -905,77 +992,32 @@ memory usage: 132.9+ KB
 </table>
 </div></div></div>
 </div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Customer type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Customer type
-Member    501
-Normal    499
-Name: count, dtype: int64
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Product line&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Product line
-Fashion accessories       178
-Food and beverages        174
-Electronic accessories    170
-Sports and travel         166
-Home and lifestyle        160
-Health and beauty         152
-Name: count, dtype: int64
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Payment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Payment
-Ewallet        345
-Cash           344
-Credit card    311
-Name: count, dtype: int64
-</pre></div>
-</div>
-</div>
-</div>
+<p>Przyglądając się statystykom opsiowym można zauważyć, że w zbiór jest niezwykle zbalansowany.</p>
+<p>Co więcej, zbiór danych zdaje się nie mieć wartości odstających (outliers).</p>
 </section>
 <section id="rozklady-danych-numerycznych">
 <h2>Rozkłady danych numerycznych<a class="headerlink" href="#rozklady-danych-numerycznych" title="Permalink to this heading">#</a></h2>
+<p>Rozkłady dla danych numerycznych.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define subset df</span>
-<span class="n">df_numeric</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;float64&#39;</span><span class="p">,</span> <span class="s1">&#39;int64&#39;</span><span class="p">])</span>
+<span class="n">df_numeric</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;float64&quot;</span><span class="p">,</span> <span class="s2">&quot;int64&quot;</span><span class="p">])</span>
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df_numeric</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">),</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+    <span class="n">nrows</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df_numeric</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">),</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="p">)</span>
 
 <span class="c1"># Increase space between rows</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
 <span class="c1"># Title</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Rozkłady danych numerycznych&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s1">&#39;bold&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Rozkłady danych numerycznych&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">)</span>
 
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">feature</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
-    <span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;float64&#39;</span><span class="p">,</span> <span class="s1">&#39;int64&#39;</span><span class="p">])</span>
-<span class="p">):</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">feature</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;float64&quot;</span><span class="p">,</span> <span class="s2">&quot;int64&quot;</span><span class="p">])):</span>
     <span class="n">ax_curr</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)][</span><span class="n">i</span> <span class="o">%</span> <span class="mi">3</span><span class="p">]</span>
-    <span class="n">df</span><span class="p">[</span><span class="n">feature</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;hist&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_curr</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">get_color</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">feature</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;hist&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_curr</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">get_color</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
+        <span class="n">feature</span>
+    <span class="p">)</span>
 
 <span class="c1"># Remove empty subplot</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">delaxes</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
@@ -997,7 +1039,7 @@ Name: count, dtype: int64
 <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
 <span class="c1"># Title</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Rozkłady danych kategorycznych&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s1">&#39;bold&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Rozkłady danych kategorycznych&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">feature</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
     <span class="n">df</span><span class="p">[</span>
@@ -1012,12 +1054,14 @@ Name: count, dtype: int64
     <span class="p">]</span>
 <span class="p">):</span>
     <span class="n">ax_curr</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)][</span><span class="n">i</span> <span class="o">%</span> <span class="mi">3</span><span class="p">]</span>
-    <span class="n">df</span><span class="p">[</span><span class="n">feature</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_curr</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">get_color</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">feature</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_curr</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">get_color</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
 
     <span class="c1"># Rotate x-labels to 45 degrees and set ha to right</span>
     <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">ax_curr</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">():</span>
         <span class="n">label</span><span class="o">.</span><span class="n">set_rotation</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
-        <span class="n">label</span><span class="o">.</span><span class="n">set_ha</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">)</span>
+        <span class="n">label</span><span class="o">.</span><span class="n">set_ha</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1025,31 +1069,407 @@ Name: count, dtype: int64
 <img alt="../_images/13f68c9148bcb87af36eef703cc8dfee3a4720e30979751e9ad832107dcf99cc.png" src="../_images/13f68c9148bcb87af36eef703cc8dfee3a4720e30979751e9ad832107dcf99cc.png" />
 </div>
 </div>
-<p>Gross income dla kobiet jest większy niż dla mężczyzn</p>
-<p>Gross income nie różni się dla różnych kategorii zadowolenia</p>
-<p>ANOVA wieloczynnikowa</p>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="analiza-korelacji">
+<h1>Analiza korelacji<a class="headerlink" href="#analiza-korelacji" title="Permalink to this heading">#</a></h1>
+<p>Po usunięciu kolumn które nie mają wpływu na analizę danych (np. <code class="docutils literal notranslate"><span class="pre">gross</span> <span class="pre">margin</span> <span class="pre">percentage</span></code>) oraz tych, które bezpośrednio wynikają z siebie (np. <code class="docutils literal notranslate"><span class="pre">Tax</span> <span class="pre">5%</span></code>), macierz korelacji wygląda następująco:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Całkowity przychód z podziałem na godziny - wykres</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Remove rendundant columns</span>
+<span class="n">df_numeric_corr</span> <span class="o">=</span> <span class="n">df_numeric</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+    <span class="p">[</span><span class="s2">&quot;gross income&quot;</span><span class="p">,</span> <span class="s2">&quot;Tax 5%&quot;</span><span class="p">,</span> <span class="s2">&quot;cogs&quot;</span><span class="p">,</span> <span class="s2">&quot;gross margin percentage&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
 
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;Hour&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Datetime&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span>
+<span class="c1"># Correlation matrix</span>
+<span class="n">corr</span> <span class="o">=</span> <span class="n">df_numeric_corr</span><span class="o">.</span><span class="n">corr</span><span class="p">()</span>
 
-<span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;Hour&#39;</span><span class="p">)[</span><span class="s1">&#39;Total&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">get_color</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Całkowity przychód z podziałem na godziny&quot;</span><span class="p">)</span>
+<span class="c1"># Generate a mask for the upper triangle</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">corr</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">))</span>
+
+<span class="c1"># Generate a custom diverging colormap</span>
+<span class="n">cmap</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">diverging_palette</span><span class="p">(</span><span class="mi">230</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="n">as_cmap</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Title</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Macierz korelacji&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">)</span>
+
+<span class="c1"># Draw the heatmap with the mask and values</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span>
+    <span class="n">corr</span><span class="p">,</span>
+    <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+    <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">vmin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">center</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">annot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">square</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">linewidths</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">cbar_kws</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shrink&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0.5, 1.0, &#39;Całkowity przychód z podziałem na godziny&#39;)
+<img alt="../_images/bd28c294d7ce9d55aaf09f111c1444761e08535c5866f6662a061e3acd2fd73c.png" src="../_images/bd28c294d7ce9d55aaf09f111c1444761e08535c5866f6662a061e3acd2fd73c.png" />
+</div>
+</div>
+<p>Macierz korelacji dla danych numerycznych nie przedstawia nic niezwykłego. Największą korelację mają kolumny <code class="docutils literal notranslate"><span class="pre">Total</span></code> i <code class="docutils literal notranslate"><span class="pre">Quantity</span></code>, co jest oczywiste, ponieważ cena całkowita jest iloczynem ceny jednostkowej i ilości.</p>
+<p>Co ciekawe, kolumna <code class="docutils literal notranslate"><span class="pre">Rating</span></code> nie wykazuje silnej korelacji z żadną z kolumn numerycznych. Można zatem przypuszczać, że ocena klienta nie jest zależna od ceny produktu, ilości zakupionych produktów czy też od dochodu brutto.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="podsumowanie-statystyk-opisowych">
+<h1>Podsumowanie statystyk opisowych<a class="headerlink" href="#podsumowanie-statystyk-opisowych" title="Permalink to this heading">#</a></h1>
+<p>Po przyjrzeniu się statystykom opisowym oraz rozkładom danych można zauważyć, że zbiór danych jest niezwykle zbalansowany, nie zawiera brakujących wartości oraz wartości <a class="reference external" href="http://xn--odstajcych-8gb.Co">odstających.Co</a> więcej, uwagę przykuwają rozkłady dla <code class="docutils literal notranslate"><span class="pre">Unit</span> <span class="pre">price</span></code>, <code class="docutils literal notranslate"><span class="pre">Quantity</span></code> oraz <code class="docutils literal notranslate"><span class="pre">Rating</span></code>, które zdają się być symetryczne i przypominające rozkład równomierny, co jest dosyć niezwykłe w przypadku danych rzeczywistych.</p>
+<p>Taka obserwacja może być spowodowana faktem, że zbiór danych jest sztucznie wygenerowany, a nie pochodzi z rzeczywistych danych, lub że metoda zbierania danych była niepoprawna lub zawierała błąd.</p>
+<p>W następnej części raportu przyjrzymy się bliżej tej tezie i spróbujemy odpowiedzieć na pytanie, czy zbiór danych jest rzeczywiście sztucznie wygenerowany, wykorzystując wiedzę domenową, wizualizacje danych i testy statystyczne.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="analiza-oceny-doswiadczenia-zakupowego">
+<h1>Analiza oceny doświadczenia zakupowego<a class="headerlink" href="#analiza-oceny-doswiadczenia-zakupowego" title="Permalink to this heading">#</a></h1>
+<p>W tej części raportu przyjrzymy się kolumnie <code class="docutils literal notranslate"><span class="pre">Rating</span></code> i spróbujemy odpowiedzieć na pytanie, czy ocena klienta jest zależna od innych kolumn.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># 1 row, 2 columns, first plot</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Gender&quot;</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">&quot;Rating&quot;</span><span class="p">,</span>
+    <span class="n">errorbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+    <span class="n">palette</span><span class="o">=</span><span class="n">custom_palette</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()),</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+        <span class="n">textcoords</span><span class="o">=</span><span class="s2">&quot;offset points&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Średnia ocena doświadczenia zakupowego pod względem płci.&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># 1 row, 2 columns, second plot</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Customer type&quot;</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">&quot;Rating&quot;</span><span class="p">,</span>
+    <span class="n">errorbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+    <span class="n">palette</span><span class="o">=</span><span class="n">custom_palette</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()),</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+        <span class="n">textcoords</span><span class="o">=</span><span class="s2">&quot;offset points&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Średnia ocena doświadczenia zakupowego pod względem typu klienta.&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img alt="../_images/fae243e195f2974dca1e77d7cb80e56447e2d47d23b6eff96287d8b158c1451f.png" src="../_images/fae243e195f2974dca1e77d7cb80e56447e2d47d23b6eff96287d8b158c1451f.png" />
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/55ec5c5b1a8f08919bda482ff25af8200cc190222c75010cd6ac9caf024a504f.png" src="../_images/55ec5c5b1a8f08919bda482ff25af8200cc190222c75010cd6ac9caf024a504f.png" />
 </div>
 </div>
+<p>Powyższe wykresy pokazują, że ocena klienta nie jest zależna od płci klienta oraz, co ciekawe, nie jest zależna od typu klienta. Można zatem przypuszczać, że klienci z kartą członkowską nie są bardziej zadowoleni z zakupów niż klienci bez karty członkowskiej. Klienci z kartą członkowską powinni otrzymywać dodatkowe korzyści, które powinny przekładać się na wyższą ocenę. Pokazuje to że te karty są bezużyteczne, lub dane są niepoprawne.</p>
+<p>Poniższy wykres przedstawia średnią ocenę doświadczenia zakupowego pod względem oddziału sklepu.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Branch&quot;</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">&quot;Rating&quot;</span><span class="p">,</span>
+    <span class="n">errorbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+    <span class="n">palette</span><span class="o">=</span><span class="n">custom_palette</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Średnia ocena doświadczenia zakupowego pod względem oddziału supercentrum.&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()),</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+        <span class="n">textcoords</span><span class="o">=</span><span class="s2">&quot;offset points&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/972a5e21fbb7954a44fa211ecefc3b15a2f5c2ab70d351ff769c3bc8ae02068f.png" src="../_images/972a5e21fbb7954a44fa211ecefc3b15a2f5c2ab70d351ff769c3bc8ae02068f.png" />
+</div>
+</div>
+<p>Na wykresie również nie widać żadnych szczególnych różnic w średniej.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="analiza-dochodow-brutto">
+<h1>Analiza dochodów brutto<a class="headerlink" href="#analiza-dochodow-brutto" title="Permalink to this heading">#</a></h1>
+<p>W tej części raportu przyjrzymy się dochodom brutto i zbadamy zależności dochodów od cech identyfikujących transakcje.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Payment&quot;</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">&quot;gross income&quot;</span><span class="p">,</span>
+    <span class="n">hue</span><span class="o">=</span><span class="s2">&quot;Gender&quot;</span><span class="p">,</span>
+    <span class="n">errorbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+    <span class="n">palette</span><span class="o">=</span><span class="n">custom_palette</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Średni dochód brutto ze względu na rodzaj płatności i płeć.&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Legenda&quot;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.05</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper left&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()),</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+        <span class="n">textcoords</span><span class="o">=</span><span class="s2">&quot;offset points&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/5c3e9b07243a4751fc0fba3c5c87473615d53d218a31f620aea0105845b56630.png" src="../_images/5c3e9b07243a4751fc0fba3c5c87473615d53d218a31f620aea0105845b56630.png" />
+</div>
+</div>
+<p>Podobnie jak w przypadku oceny doświadczenia zakupowego, dochody brutto nie wykazują żadnych szczególnych zależności od płci klienta oraz typu płatności.</p>
+<p>Przyjrzyjmy się zależności dochodów brutto od rodzaju produktu.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Product line&quot;</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">&quot;gross income&quot;</span><span class="p">,</span>
+    <span class="n">errorbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+    <span class="n">palette</span><span class="o">=</span><span class="n">custom_palette</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()),</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+        <span class="n">textcoords</span><span class="o">=</span><span class="s2">&quot;offset points&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Średni dochód brutto ze względu na rodzaj produktu.&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+<span class="c1"># Rotate x-labels to 45 degrees and set ha to right</span>
+<span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">():</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">set_rotation</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">set_ha</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/57fd081f6e46aa372e8620bcf53482a54175382148333d2dc463425772d7aaf2.png" src="../_images/57fd081f6e46aa372e8620bcf53482a54175382148333d2dc463425772d7aaf2.png" />
+</div>
+</div>
+<p>Różnice pomiędzy średnim dochodem brutto ze względu a kategorią produktów są bardzo małe. Jest to sprzeczne z rzeczywistością ponieważ ceny produktów w tych kategoriach bardzo się różnią więc powinna istnieć zauważalna różnica.</p>
+<p>Przyjrzymy się również potencjalnie ciekawej zależności dochodów brutto od oceny doświadczenia zakupowego.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Rating&quot;</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">&quot;gross income&quot;</span><span class="p">,</span>
+    <span class="n">errorbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+    <span class="n">palette</span><span class="o">=</span><span class="n">custom_palette</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Średni dochód brutto ze względu na ocenę doświadczenia zakupowego.&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/37817e58a6b9bccb1e7a5c27977169f15386156cf312386b7028287ed3bbaabd.png" src="../_images/37817e58a6b9bccb1e7a5c27977169f15386156cf312386b7028287ed3bbaabd.png" />
+</div>
+</div>
+<p>Z wykresu ciężko ocenić czy zadowolenie klienta ma jakiś realny wpływ na średni dochód brutto. W celu lepszej wizaulizacji podzieliliśmy ocenę na kategorie.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">map_rating_category2</span><span class="p">(</span><span class="n">rating</span><span class="p">):</span>
+    <span class="n">categories</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="mf">4.0</span><span class="p">,</span> <span class="s2">&quot;Category 4&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">4.6</span><span class="p">,</span> <span class="s2">&quot;Category 5&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">5.6</span><span class="p">,</span> <span class="s2">&quot;Category 6&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">6.6</span><span class="p">,</span> <span class="s2">&quot;Category 7&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">7.6</span><span class="p">,</span> <span class="s2">&quot;Category 8&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">8.6</span><span class="p">,</span> <span class="s2">&quot;Category 9&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">9.6</span><span class="p">,</span> <span class="s2">&quot;Category 10&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="k">for</span> <span class="n">lower_bound</span><span class="p">,</span> <span class="n">category</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">lower_bound</span> <span class="o">&lt;=</span> <span class="n">rating</span> <span class="o">&lt;</span> <span class="n">lower_bound</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">category</span>
+    <span class="k">return</span> <span class="s2">&quot;Other&quot;</span>
+
+
+<span class="c1"># Apply the mapper to the &quot;Rating&quot; column</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">&quot;Rating_Category&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Rating&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">map_rating_category2</span><span class="p">)</span>
+
+<span class="n">order_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Category 4&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Category 5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Category 6&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Category 7&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Category 8&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Category 9&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Category 10&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Rating_Category&quot;</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">&quot;gross income&quot;</span><span class="p">,</span>
+    <span class="n">errorbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+    <span class="n">palette</span><span class="o">=</span><span class="n">custom_palette</span><span class="p">,</span>
+    <span class="n">order</span><span class="o">=</span><span class="n">order_list</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Średni dochód brutto ze względu na klasę oceny doświadczenia zakupowego.&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">get_height</span><span class="p">()),</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+        <span class="n">xytext</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">),</span>
+        <span class="n">textcoords</span><span class="o">=</span><span class="s2">&quot;offset points&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/ca37badb78f0e1c869c78217b188ca24277ce210963caecc89fa686b59574980.png" src="../_images/ca37badb78f0e1c869c78217b188ca24277ce210963caecc89fa686b59574980.png" />
+</div>
+</div>
+<p>Po podziale na kategorie wykres pokazuje że największy średni dochód brutto jest z klientów najmniej zadowolonych. Co jest sytuacją nie realistyczną.</p>
+<section id="sprawdzanie-istotnosci">
+<h2>Sprawdzanie istotności<a class="headerlink" href="#sprawdzanie-istotnosci" title="Permalink to this heading">#</a></h2>
+<p>W tej części raportu przyjrzymy się dokładniej różnicom w dochodach brutto pomiędzy kategoriami oceny doświadczenia zakupowego.</p>
+<p>Najpierw wykorzystamy wykres pudełkowy aby sprawdzić rozkład dochodów w kategoriach.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Rating_Category&quot;</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">&quot;gross income&quot;</span><span class="p">,</span>
+    <span class="n">order</span><span class="o">=</span><span class="n">order_list</span><span class="p">,</span>
+    <span class="n">palette</span><span class="o">=</span><span class="n">custom_palette</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span>
+    <span class="s2">&quot;Wykres pudełkowy średniego dochodu brutto ze względu na klasę oceny doświadczenia zakupowego.&quot;</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/bedbba92caa66f02c74b3c2ca9e88657b7fa373ed998d2fc3771688bc46d501a.png" src="../_images/bedbba92caa66f02c74b3c2ca9e88657b7fa373ed998d2fc3771688bc46d501a.png" />
+</div>
+</div>
+<p>Wykres pudełkowe pokazują że występują małe różnice pomiędzy kategoriami oceny doświadczenia zakupowego. W dalszej częśi sprawdzimy czy te różnice są istotnie statystycznie.</p>
+</section>
+<section id="test-anova">
+<h2>Test ANOVA<a class="headerlink" href="#test-anova" title="Permalink to this heading">#</a></h2>
+<p>W projekcie zastosowaliśmy test ANOVA, aby ocenić, czy istnieją istotne statystycznie różnice między średnimi wartościami dochodu brutto w różnych grupach. Wyniki tego testu pomagają zrozumieć, czy dochody brutto są równomiernie rozłożone we wszystkich analizowanych grupach oceny doświadczenia zakupowego.</p>
+<p>Hipoteza zerowa <span class="math notranslate nohighlight">\(H_0\)</span>: Średnie gross income są równe we wszystkich kategoriach.</p>
+<p>Hipoteza alternatywna <span class="math notranslate nohighlight">\(H_1\)</span>: Istnieją różnice w średnich gross income między co najmniej dwiema kategoriami.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">f_oneway</span>
+
+<span class="c1"># Załóżmy, że masz DataFrame &#39;data&#39; z kolumnami &#39;category&#39; i &#39;gross_income&#39;</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">f_oneway</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">[</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;gross income&quot;</span><span class="p">][</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;Rating_Category&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">category</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">category</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Rating_Category&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Statystyka testowa F:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">statistic</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;P-wartość:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">pvalue</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Statystyka testowa F: 1.1454466226443982
+P-wartość: 0.33372368680860054
+</pre></div>
+</div>
+</div>
+</div>
+<p>Wartość P wynosi 0.33, jest większa przyjętego poziomu istotności wynoszącego 0.05. Zatem, nie ma podstaw do odrzucenia hipotezy zerowej. Możemy stwierdzić, że średnie dochody brutto są równe we wszystkich kategoriach.</p>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="t-test">
+<h1>T-test<a class="headerlink" href="#t-test" title="Permalink to this heading">#</a></h1>
+<p>Wykorzystamy również test t-studenta, aby ocenić, czy średnie wartości gross income są równe dla obu płci. Test ten umożliwia statystyczne porównanie różnic między dwiema grupami, w tym przypadku grupą mężczyzn i grupą kobiet. Wyniki t-testu pozwolą zidentyfikować ewentualne istotne różnice w średnich dochodach brutto między płciami.</p>
+<p>Hipoteza zerowa <span class="math notranslate nohighlight">\(H_0\)</span>: Średnie gross income dla obu płci są równe.</p>
+<p>Hipoteza alternatywna <span class="math notranslate nohighlight">\(H_1\)</span>: Średnie gross income dla obu płci nie są równe.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">ttest_ind</span>
+
+<span class="c1"># Załóżmy, że masz DataFrame &#39;data&#39; z kolumnami &#39;gender&#39; (mężczyzna/kobieta) i &#39;gross_income&#39;</span>
+<span class="n">gross_income_male</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;Gender&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Male&quot;</span><span class="p">][</span><span class="s2">&quot;gross income&quot;</span><span class="p">]</span>
+<span class="n">gross_income_female</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;Gender&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Female&quot;</span><span class="p">][</span><span class="s2">&quot;gross income&quot;</span><span class="p">]</span>
+
+<span class="c1"># Przeprowadź test t-Studenta</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">ttest_ind</span><span class="p">(</span><span class="n">gross_income_male</span><span class="p">,</span> <span class="n">gross_income_female</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Statystyka testowa t:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">statistic</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;P-wartość:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">pvalue</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Statystyka testowa t: -1.5641266415240969
+P-wartość: 0.11810484577135821
+</pre></div>
+</div>
+</div>
+</div>
+<p>Wartość P wynosi 0.11 i jest większa od przyjętego poziomu istoności wynoszącego 0.05. W związku z tym, nie ma podstaw do odrzucenia hipotezy zerowej. Przyjmujemy hipotezę zerową, że średnie dochody brutto są równe dla obu płci.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="analiza-liczby-odwiedzin-w-zaleznosci-od-godziny">
+<h1>Analiza liczby odwiedzin w zależności od godziny<a class="headerlink" href="#analiza-liczby-odwiedzin-w-zaleznosci-od-godziny" title="Permalink to this heading">#</a></h1>
+<p>Jeżeli przyjrzymy się danym udostępnianym przez Google dotyczącym ruchu w sklepach, to możemy zauważyć, że największy ruch w sklepach jest w godzinach popołudniowych, a najmniejszy w godzinach nocnych oraz porannych. Choć godzina jest wartością dyskretną, to oczekujemy, że rozkład liczby odwiedzin będzie przypominał rozkład normalny. W przeciwnym wypadku możemy podejrzewać, że dane zostały wygenerowane sztucznie.</p>
+<p>W tej części raportu przyjrzymy się rozkładowi liczby odwiedzin w zależności od godziny.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Liczba odwiedzin w danej godzinie - wykres</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">&quot;Hour&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Datetime&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span>
 
-<span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;Hour&#39;</span><span class="p">)[</span><span class="s1">&#39;Invoice ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">get_color</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Liczba odwiedzin w danej godzinie&quot;</span><span class="p">)</span>
+<span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;Hour&quot;</span><span class="p">)[</span><span class="s2">&quot;Invoice ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">get_color</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Liczba odwiedzin w danej godzinie&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1060,26 +1480,86 @@ Name: count, dtype: int64
 <img alt="../_images/487414e91a11846c8b728401df89e1404e523a6d369f224f8aa2f26fd2597b95.png" src="../_images/487414e91a11846c8b728401df89e1404e523a6d369f224f8aa2f26fd2597b95.png" />
 </div>
 </div>
-<p>Test na normalność rozkładu</p>
-<ul class="simple">
-<li><p>Test Shapiro-Wilk</p></li>
-</ul>
+<p>Na pierwszy rzut oka rozkład nie przypomina rozkładu normalnego. Można pokusić się o stwierdzenie, że rozkład jest próbą rozkladu równomiernego.</p>
+<p>Ponieważ zmienna jest dyskretna, do tego o ścisłej, niewielkiej ilości kategorii, uznanie jej za “semi-continuous” nie ma sensu. Eliminuje to możliwość wykorzystania testu Shapiro-Wilka do sprawdzenia normalności rozkładu, jako iż założenie o ciągłości zmiennej jest fundalmentalnym założeniem tego testu. Podobnie nie możemy wykorzystać testu Kolmogorova-Smirnova, ponieważ test ten jest również przeznaczony dla zmiennych ciągłych.</p>
+<p>Odpowiedni natomiast zdaje się być test chi-kwadrat, który pozwala na wykorzystanie zmiennych dyskretnych. Test chi-kwadrat pozwala na sprawdzenie, czy rozkład zmiennej jest zgodny z rozkładem teoretycznym.</p>
+<p>Zaczniemy wobec tego od zamodelowania hipotetycznego rozkładu teoretycznego w oparciu o wiedzę domenową, próbkując rozkład normalny.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ile produktów danej kategorii sprzedano w danej godzinie - wykres</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sample size</span>
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">1000</span>
 
-<span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">&#39;Hour&#39;</span><span class="p">,</span> <span class="s1">&#39;Product line&#39;</span><span class="p">])[</span><span class="s1">&#39;Quantity&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">unstack</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">PLOT_COLORS</span><span class="p">)</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Ile produktów danej kategorii sprzedano w danej godzinie&quot;</span><span class="p">)</span>
+<span class="c1"># Assuming the mean and standard deviation</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="mf">15.5</span>
+<span class="n">std_dev</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="c1"># Create bins for the histogram, assuming integer values</span>
+<span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span> <span class="o">+</span> <span class="mi">10</span>  <span class="c1"># to center bins around integers</span>
+
+<span class="c1"># Calculate the probabilities for each bin using the CDF</span>
+<span class="n">bin_probs</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">std_dev</span><span class="p">)</span> <span class="o">-</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span>
+    <span class="n">bins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">std_dev</span>
+<span class="p">)</span>
+
+<span class="c1"># Convert probabilities to expected frequencies</span>
+<span class="n">expected_frequencies</span> <span class="o">=</span> <span class="n">bin_probs</span> <span class="o">*</span> <span class="n">n_samples</span>
+
+<span class="n">expected_frequencies_normalized</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">expected_frequencies</span> <span class="o">/</span> <span class="n">expected_frequencies</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="n">n_samples</span>
+<span class="p">)</span>
+
+<span class="n">expected_frequencies_normalized</span><span class="p">,</span> <span class="n">expected_frequencies_normalized</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="c1"># Plot expected frequencies vs observed frequencies</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span>
+    <span class="n">bins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">expected_frequencies_normalized</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="s2">&quot;edge&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;plum&quot;</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Number of customers&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Frequency&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Oszacowany teoretyczny rozkład liczby klientów w godzinach otwarcia&quot;</span><span class="p">)</span>
+
+<span class="c1"># Color purple</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0.5, 1.0, &#39;Ile produktów danej kategorii sprzedano w danej godzinie&#39;)
-</pre></div>
-</div>
-<img alt="../_images/9420dd88efc20b710c8d3ba9ff6df2bb2dd117db171d01696a33b3c59586df56.png" src="../_images/9420dd88efc20b710c8d3ba9ff6df2bb2dd117db171d01696a33b3c59586df56.png" />
+<img alt="../_images/d8f08482ce15f4ca81415a64af3e66477874f9277d9ed4de85afe07046792b34.png" src="../_images/d8f08482ce15f4ca81415a64af3e66477874f9277d9ed4de85afe07046792b34.png" />
 </div>
 </div>
 </section>
+<section class="tex2jax_ignore mathjax_ignore" id="test-chi-kwadrat">
+<h1>Test chi-kwadrat<a class="headerlink" href="#test-chi-kwadrat" title="Permalink to this heading">#</a></h1>
+<p>Wykorzystamy wspomniany wyżej test chi-kwadrat do sprawdzenia, czy rozkład liczby odwiedzin jest zgodny z rozkładem normalnym.</p>
+<p>Hipoteza zerowa <span class="math notranslate nohighlight">\(H_0\)</span>: Rozkład liczby odwiedzin jest zgodny z oczekiwanym rozkładem.</p>
+<p>Hipoteza alternatywna <span class="math notranslate nohighlight">\(H_1\)</span>: Rozkład liczby odwiedzin nie jest zgodny z oczekiwanym rozkładem.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compute chi-square test statistic</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">chisquare</span><span class="p">(</span>
+    <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;Hour&quot;</span><span class="p">)[</span><span class="s2">&quot;Invoice ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">()),</span>
+    <span class="n">expected_frequencies_normalized</span><span class="p">,</span>
+    <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Statystyka testowa chi-square:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">statistic</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;P-value:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">pvalue</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Statystyka testowa chi-square: 106.74783446242944
+P-value: 2.4113263806526283e-18
+</pre></div>
+</div>
+</div>
+</div>
+<p>Wartość P jest bliska zeru i jest mniejsza od przyjętego poziomu istoności wynoszącego 0.05. W związku z tym, odrzucamy hipotezę zerową. Przyjmujemy hipotezę alternatywną, że rozkład liczby odwiedzin nie jest zgodny z oczekiwanym rozkładem.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="podsumowanie">
+<h1>Podsumowanie<a class="headerlink" href="#podsumowanie" title="Permalink to this heading">#</a></h1>
+<p>Tu napisać wnioski</p>
 </section>
 
     <script type="text/x-thebe-config">
@@ -1150,6 +1630,18 @@ Name: count, dtype: int64
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rozklady-danych-kategorycznych">Rozkłady danych kategorycznych</a></li>
 </ul>
 </li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#analiza-korelacji">Analiza korelacji</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#podsumowanie-statystyk-opisowych">Podsumowanie statystyk opisowych</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#analiza-oceny-doswiadczenia-zakupowego">Analiza oceny doświadczenia zakupowego</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#analiza-dochodow-brutto">Analiza dochodów brutto</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sprawdzanie-istotnosci">Sprawdzanie istotności</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-anova">Test ANOVA</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#t-test">T-test</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#analiza-liczby-odwiedzin-w-zaleznosci-od-godziny">Analiza liczby odwiedzin w zależności od godziny</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#test-chi-kwadrat">Test chi-kwadrat</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#podsumowanie">Podsumowanie</a></li>
 </ul>
 
   </nav></div>
