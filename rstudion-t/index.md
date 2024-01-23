@@ -1,11 +1,11 @@
 # Strona główna
 
-This is a small sample book to give you a feel for how book content is
-structured.
-It shows off a few of the major file types, as well as some sample content.
-It does not go in-depth into any particular topic - check out [the Jupyter Book documentation](https://jupyterbook.org) for more information.
+Raport z projektu z przedmiotu **Analiza Danych**, prowadzonego na Wydziale Zarządzania i Ekonomii Politechniki Gdańskiej.
 
-Check out the content pages bundled with this sample book to see more.
+Więcej informacji na temat wdrożenia projektu można znaleźć w sekcji "O projekcie"
 
 ```{tableofcontents}
 ```
+
+Projekt został opublikowany w oparciu o narzędzie [Jupyter book](https://github.com/executablebooks/jupyter-book) oraz [Github Pages](https://pages.github.com/).
+

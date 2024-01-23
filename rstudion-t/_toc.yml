@@ -7,3 +7,6 @@ parts:
   - caption: Biedronki
     chapters:
     - file: notebooks/analysis
+  - caption: O projekcie
+    chapters:
+    - file: about
