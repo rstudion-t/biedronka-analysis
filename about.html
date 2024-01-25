@@ -397,7 +397,7 @@ document.write(`
 <p>Raport został opublikowany w oparciu o narzędzie <a class="reference external" href="https://github.com/executablebooks/jupyter-book">Jupyter book</a> oraz <a class="reference external" href="https://pages.github.com/">Github Pages</a>.</p>
 <section id="diagram-wdrozenia">
 <h2>Diagram wdrożenia<a class="headerlink" href="#diagram-wdrozenia" title="Permalink to this heading">#</a></h2>
-<p><img alt="Diagram wdrożenia" src="_images/." /></p>
+<p><img alt="Diagram wdrożenia" src="_images/deployment-diagram.png" /></p>
 <p>Projekt wykorzystuje workflow <strong>Github Actions</strong> do automatyzacji procesu wdrożenia. Przy każdej zmianie w repozytorium na gałęzi <code class="docutils literal notranslate"><span class="pre">main</span></code> uruchamiany jest proces budowania raportu, który następnie jest publikowany na gałęzi <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> i dostępny pod adresem <a class="reference external" href="https://rstudion-t.github.io/">https://rstudion-t.github.io/</a>.</p>
 <p>Do zarządzania zależnościami wykorzystano narzędzie <strong>Poetry</strong>.</p>
 <p>Workflow został zdefiniowany w pliku <a class="reference external" href="https://github.com/rstudion-t/biedronka-analysis/blob/main/.github/workflows/publish-book.yaml"><code class="docutils literal notranslate"><span class="pre">.github/workflows/deploy.yml</span></code></a>:</p>

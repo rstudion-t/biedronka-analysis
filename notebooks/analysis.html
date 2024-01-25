@@ -1126,7 +1126,7 @@ memory usage: 132.9+ KB
 </section>
 <section class="tex2jax_ignore mathjax_ignore" id="podsumowanie-statystyk-opisowych">
 <h1>Podsumowanie statystyk opisowych<a class="headerlink" href="#podsumowanie-statystyk-opisowych" title="Permalink to this heading">#</a></h1>
-<p>Po przyjrzeniu się statystykom opisowym oraz rozkładom danych można zauważyć, że zbiór danych jest niezwykle zbalansowany, nie zawiera brakujących wartości oraz wartości <a class="reference external" href="http://xn--odstajcych-8gb.Co">odstających.Co</a> więcej, uwagę przykuwają rozkłady dla <code class="docutils literal notranslate"><span class="pre">Unit</span> <span class="pre">price</span></code>, <code class="docutils literal notranslate"><span class="pre">Quantity</span></code> oraz <code class="docutils literal notranslate"><span class="pre">Rating</span></code>, które zdają się być symetryczne i przypominające rozkład równomierny, co jest dosyć niezwykłe w przypadku danych rzeczywistych.</p>
+<p>Po przyjrzeniu się statystykom opisowym oraz rozkładom danych można zauważyć, że zbiór danych jest niezwykle zbalansowany, nie zawiera brakujących wartości oraz wartości odstających. Co więcej, uwagę przykuwają rozkłady dla <code class="docutils literal notranslate"><span class="pre">Unit</span> <span class="pre">price</span></code>, <code class="docutils literal notranslate"><span class="pre">Quantity</span></code> oraz <code class="docutils literal notranslate"><span class="pre">Rating</span></code>, które zdają się być symetryczne i przypominające rozkład równomierny, co jest dosyć niezwykłe w przypadku danych rzeczywistych.</p>
 <p>Taka obserwacja może być spowodowana faktem, że zbiór danych jest sztucznie wygenerowany, a nie pochodzi z rzeczywistych danych, lub że metoda zbierania danych była niepoprawna lub zawierała błąd.</p>
 <p>W następnej części raportu przyjrzymy się bliżej tej tezie i spróbujemy odpowiedzieć na pytanie, czy zbiór danych jest rzeczywiście sztucznie wygenerowany, wykorzystując wiedzę domenową, wizualizacje danych i testy statystyczne.</p>
 </section>
@@ -1565,7 +1565,9 @@ P-value: 2.4113263806526283e-18
 </section>
 <section class="tex2jax_ignore mathjax_ignore" id="podsumowanie">
 <h1>Podsumowanie<a class="headerlink" href="#podsumowanie" title="Permalink to this heading">#</a></h1>
-<p>Tu napisać wnioski</p>
+<p>Na podstawie analizy wykonanych wykresów oraz przeprowadzonych testów statystycznych można stwierdzić, że dane, z dużym prawdopodobieństwem, zostały zebrane w sposób błędny lub sztuczny. Wiele z identyfikowanych zależności nie znajduje odzwierciedlenia w rzeczywistym środowisku, co powoduje, że istnieje potrzeba weryfikacji procesu gromadzenia danych.</p>
+<p>Należałoby sprawdzić proces podczas którego powstawały dane aby móc upewnić się jakie błędy zostały popełnione. Bez potwierdzenia autentyczności zebranych danych, wszystkie inne rekomendacje stają się bezpodstawne.</p>
+<p>Przykładem tego jest brak jakiegokolwiek zaobserwowanego wpływu kart lojalnościowych na poziom zadowolenia klienta, co prawdopodobnie wynika z losowego generowania danych.</p>
 </section>
 
     <script type="text/x-thebe-config">
