@@ -6,7 +6,7 @@ Raport został opublikowany w oparciu o narzędzie [Jupyter book](https://github
 
 ## Diagram wdrożenia
 
-![Diagram wdrożenia]()
+![Diagram wdrożenia](./static/deployment-diagram.png)
 
 Projekt wykorzystuje workflow **Github Actions** do automatyzacji procesu wdrożenia. Przy każdej zmianie w repozytorium na gałęzi `main` uruchamiany jest proces budowania raportu, który następnie jest publikowany na gałęzi `gh-pages` i dostępny pod adresem [https://rstudion-t.github.io/](https://rstudion-t.github.io/).
 
